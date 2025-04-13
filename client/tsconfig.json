@@ -17,12 +17,18 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "preserve",
+    "strictNullChecks": true,
+    "baseUrl": ".", // ✅ Add this
+    "paths": {
+      "@/*": [
+        "src/*"
+      ] // ✅ Add this
+    },
     "plugins": [
       {
         "name": "next"
       }
-    ],
-    "strictNullChecks": true
+    ]
   },
   "include": [
     "next-env.d.ts",
