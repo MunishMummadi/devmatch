@@ -1,74 +1,104 @@
 package main
 
 import (
+	"context"
+	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
-	"github.com/gin-gonic/gin"
+	"server/api/routes"                 // <-- Adjust import path
+	"server/internal/config"            // <-- Adjust import path
+	"server/internal/services/database" // <-- Adjust import path
+
+	"github.com/clerkinc/clerk-sdk-go/clerk"
 )
 
-var db = make(map[string]string)
+// @title Your Project API
+// @version 1.0
+// @description This is the API server for the Your Project application.
+// @termsOfService http://swagger.io/terms/
 
-func setupRouter() *gin.Engine {
-	// Disable Console Color
-	// gin.DisableConsoleColor()
-	r := gin.Default()
+// @contact.name API Support
+// @contact.url http://www.swagger.io/support
+// @contact.email support@swagger.io
 
-	// Ping test
-	r.GET("/ping", func(c *gin.Context) {
-		c.String(http.StatusOK, "pong")
-	})
+// @license.name Apache 2.0
+// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
 
-	// Get user value
-	r.GET("/user/:name", func(c *gin.Context) {
-		user := c.Params.ByName("name")
-		value, ok := db[user]
-		if ok {
-			c.JSON(http.StatusOK, gin.H{"user": user, "value": value})
-		} else {
-			c.JSON(http.StatusOK, gin.H{"user": user, "status": "no value"})
-		}
-	})
+// @host localhost:8080
+// @BasePath /
 
-	// Authorized group (uses gin.BasicAuth() middleware)
-	// Same than:
-	// authorized := r.Group("/")
-	// authorized.Use(gin.BasicAuth(gin.Credentials{
-	//	  "foo":  "bar",
-	//	  "manu": "123",
-	//}))
-	authorized := r.Group("/", gin.BasicAuth(gin.Accounts{
-		"foo":  "bar", // user:foo password:bar
-		"manu": "123", // user:manu password:123
-	}))
-
-	/* example curl for /admin with basicauth header
-	   Zm9vOmJhcg== is base64("foo:bar")
-
-		curl -X POST \
-	  	http://localhost:8080/admin \
-	  	-H 'authorization: Basic Zm9vOmJhcg==' \
-	  	-H 'content-type: application/json' \
-	  	-d '{"value":"bar"}'
-	*/
-	authorized.POST("admin", func(c *gin.Context) {
-		user := c.MustGet(gin.AuthUserKey).(string)
-
-		// Parse JSON
-		var json struct {
-			Value string `json:"value" binding:"required"`
-		}
-
-		if c.Bind(&json) == nil {
-			db[user] = json.Value
-			c.JSON(http.StatusOK, gin.H{"status": "ok"})
-		}
-	})
-
-	return r
-}
+// @securityDefinitions.apikey ClerkAuth
+// @in header
+// @name Authorization
+// @description Clerk JWT token (include 'Bearer ' prefix)
 
 func main() {
-	r := setupRouter()
-	// Listen and Server in 0.0.0.0:8080
-	r.Run(":8080")
+	log.Println("Starting server...")
+
+	// Load Configuration
+	cfg := config.LoadConfig()
+	log.Printf("Configuration loaded: Port=%s, GinMode=%s\n", cfg.Port, cfg.GinMode)
+
+	// Initialize Clerk Client
+	clerkClient, err := clerk.NewClient(cfg.ClerkSecretKey)
+	if err != nil {
+		log.Fatalf("Failed to create Clerk client: %v", err)
+	}
+	log.Println("Clerk client initialized successfully.")
+
+	// Initialize Database Connection Pool
+	dbPool, err := database.ConnectDB(cfg.SupabaseDBURL)
+	if err != nil {
+		log.Fatalf("Failed to connect to database: %v", err)
+	}
+	defer func() {
+		log.Println("Closing database connection pool...")
+		dbPool.Close()
+	}()
+	log.Println("Database connection pool initialized successfully.")
+
+	// Setup Gin Router
+	router := routes.SetupRouter(dbPool, clerkClient)
+	log.Println("Gin router setup complete.")
+
+	// Setup HTTP Server
+	server := &http.Server{
+		Addr:    ":" + cfg.Port,
+		Handler: router,
+		// Optional: Add timeouts for production readiness
+		// ReadTimeout:  15 * time.Second,
+		// WriteTimeout: 15 * time.Second,
+		// IdleTimeout:  60 * time.Second,
+	}
+
+	// Run server in a goroutine so it doesn't block
+	go func() {
+		log.Printf("Server listening on port %s\n", cfg.Port)
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("listen: %s\n", err)
+		}
+	}()
+
+	// Graceful Shutdown Handling
+	quit := make(chan os.Signal, 1)
+	// kill (no param) default sends syscall.SIGTERM
+	// kill -2 is syscall.SIGINT
+	// kill -9 is syscall.SIGKILL but can't be caught, so don't need to add it
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit // Block until a signal is received
+	log.Println("Shutting down server...")
+
+	// The context is used to inform the server it has 5 seconds to finish
+	// the requests it is currently handling
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := server.Shutdown(ctx); err != nil {
+		log.Fatal("Server forced to shutdown:", err)
+	}
+
+	log.Println("Server exiting.")
 }
