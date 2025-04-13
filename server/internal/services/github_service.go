@@ -5,7 +5,7 @@ import (
 	"log"
 	"net/http"
 
-	"gin/internal/config"
+	"github.com/MunishMummadi/devmatch/server/internal/config"
 
 	"github.com/google/go-github/v59/github"
 )

@@ -4,20 +4,22 @@ import (
 	"log"
 	"net/http"
 
-	"gin/api/middleware"
-	"gin/internal/services/database"
+	"github.com/MunishMummadi/devmatch/server/internal/services"
+	"github.com/MunishMummadi/devmatch/server/internal/services/database"
 
+	clerk "github.com/clerk/clerk-sdk-go/v2"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
 )
 
 type AuthHandler struct {
-	DBService *database.DBService
+	DBService    *database.DBService
+	ClerkService *services.ClerkService
 	// Add Clerk client or other services if needed directly
 }
 
-func NewAuthHandler(db *database.DBService) *AuthHandler {
-	return &AuthHandler{DBService: db}
+func NewAuthHandler(db *database.DBService, clerkService *services.ClerkService) *AuthHandler {
+	return &AuthHandler{DBService: db, ClerkService: clerkService}
 }
 
 // GetCurrentUserProfile godoc
@@ -32,29 +34,41 @@ func NewAuthHandler(db *database.DBService) *AuthHandler {
 // @Failure 500 {object} gin.H "Internal Server Error"
 // @Router /auth/user [get]
 func (h *AuthHandler) GetCurrentUserProfile(c *gin.Context) {
-	clerkUserID, exists := middleware.GetClerkUserID(c)
-	if !exists {
-		// This shouldn't happen if middleware is applied correctly, but good practice to check
-		log.Println("Error: ClerkUserID not found in context in GetCurrentUserProfile")
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not identify authenticated user"})
+	// Use the base package's function to get claims
+	claims, ok := clerk.SessionClaimsFromContext(c.Request.Context())
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized: No session claims found"})
 		return
 	}
 
-	userProfile, err := h.DBService.GetUserProfileByClerkID(c.Request.Context(), clerkUserID)
+	// Fetch the Clerk User object using the UserID from the session claims
+	userProfile, err := h.ClerkService.GetUser(c.Request.Context(), claims.Subject)
 	if err != nil {
-		if err == pgx.ErrNoRows {
-			log.Printf("Profile not found for Clerk User ID: %s\n", clerkUserID)
-			c.JSON(http.StatusNotFound, gin.H{"error": "User profile not found. Please create one."})
+		// Handle specific Clerk errors if necessary, otherwise generic error
+		log.Printf("Error fetching user from Clerk API for UserID %s: %v", claims.Subject, err)
+		// Check if it's a 'not found' error from Clerk if possible, otherwise assume internal error
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve user profile from Clerk"})
+		return
+	}
+
+	// Check if the user profile exists in *our* database
+	_, dbErr := h.DBService.GetUserProfileByClerkID(c.Request.Context(), userProfile.ID) // Use userProfile.ID from Clerk response
+	if dbErr != nil {
+		if dbErr == pgx.ErrNoRows {
+			log.Printf("Profile not found in DB for Clerk User ID: %s\n", userProfile.ID)
+			c.JSON(http.StatusNotFound, gin.H{
+				"error":         "User profile not found in database. Please complete registration.",
+				"clerkUserData": userProfile, // Optionally return Clerk data to aid frontend
+			})
 		} else {
-			log.Printf("Error fetching profile for Clerk User ID %s: %v\n", clerkUserID, err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve user profile"})
+			log.Printf("Error fetching profile from DB for Clerk User ID %s: %v\n", userProfile.ID, dbErr)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve user profile from database"})
 		}
 		return
 	}
 
-	c.JSON(http.StatusOK, userProfile)
+	// If we reach here, Clerk user exists and profile exists in our DB
+	// Return the profile from our DB (as it might have more/different info than Clerk's raw data)
+	dbProfile, _ := h.DBService.GetUserProfileByClerkID(c.Request.Context(), userProfile.ID) // Fetch again to return
+	c.JSON(http.StatusOK, dbProfile)                                                         // Return the profile from our DB
 }
-
-// TODO: Implement /auth/github/login (Redirect to Clerk's GitHub handler)
-// TODO: Implement /auth/github/callback (Handled by Clerk frontend components usually, backend might just need to ensure session is created)
-// TODO: Implement /auth/logout (Needs coordination with Clerk frontend SDK for clearing cookies/session)

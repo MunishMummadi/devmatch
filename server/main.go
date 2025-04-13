@@ -9,12 +9,13 @@ import (
 	"syscall"
 	"time"
 
-	"gin/api/routes"                 // Corrected import path
-	"gin/internal/config"            // Corrected import path
-	"gin/internal/services"          // Added services import
-	"gin/internal/services/database" // Corrected import path
+	"github.com/MunishMummadi/devmatch/server/api/routes"                 // Use new module path
+	"github.com/MunishMummadi/devmatch/server/internal/config"            // Use new module path
+	"github.com/MunishMummadi/devmatch/server/internal/services"          // Use new module path
+	"github.com/MunishMummadi/devmatch/server/internal/services/database" // Use new module path
 
-	"github.com/clerkinc/clerk-sdk-go/clerk"
+	// clerkclient "github.com/clerk/clerk-sdk-go/v2/client" // Client for backend API calls - Incorrect usage
+	clerk "github.com/clerk/clerk-sdk-go/v2" // Base package contains NewClient
 )
 
 // @title Your Project API
@@ -45,11 +46,8 @@ func main() {
 	log.Printf("Configuration loaded: Port=%s, GinMode=%s\n", cfg.Port, cfg.GinMode)
 
 	// Initialize Clerk Client
-	clerkClient, err := clerk.NewClient(cfg.ClerkSecretKey)
-	if err != nil {
-		log.Fatalf("Failed to create Clerk client: %v", err)
-	}
-	log.Println("Clerk client initialized successfully.")
+	clerk.SetKey(cfg.ClerkSecretKey) // Use global SetKey for V2
+	log.Println("Clerk Secret Key set successfully.")
 
 	// Initialize Database Connection Pool
 	dbPool, err := database.ConnectDB(cfg.SQLitePath)
@@ -78,21 +76,19 @@ func main() {
 			geminiService.Close()
 		}()
 	}
-	clerkService := services.NewClerkService(clerkClient, cfg)
-	log.Println("Application services initialized.")
+	// Initialize Database Service (using the pool)
+	dbService := database.NewDBService(dbPool)
+	clerkService := services.NewClerkService(cfg) // Update call: no client needed
+	log.Println("Database and Clerk services initialized.")
 
-	// Setup Gin Router
-	router := routes.SetupRouter(dbPool, clerkClient, githubService, geminiService, clerkService)
+	// Initialize handlers
+	router := routes.SetupRouter(dbService, githubService, geminiService, clerkService) // Uncomment router setup
 	log.Println("Gin router setup complete.")
 
 	// Setup HTTP Server
 	server := &http.Server{
 		Addr:    ":" + cfg.Port,
-		Handler: router,
-		// Optional: Add timeouts for production readiness
-		// ReadTimeout:  15 * time.Second,
-		// WriteTimeout: 15 * time.Second,
-		// IdleTimeout:  60 * time.Second,
+		Handler: router, // Uncomment handler
 	}
 
 	// Run server in a goroutine so it doesn't block

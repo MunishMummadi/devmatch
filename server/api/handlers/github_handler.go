@@ -5,7 +5,7 @@ import (
 	"log"
 	"net/http"
 
-	"gin/internal/services"
+	"github.com/MunishMummadi/devmatch/server/internal/services"
 
 	"github.com/gin-gonic/gin"
 )

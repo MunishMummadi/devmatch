@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"gin/internal/config"
 
+	"github.com/MunishMummadi/devmatch/server/internal/config"
 	"github.com/google/generative-ai-go/genai"
 	"google.golang.org/api/option"
 )

@@ -2,48 +2,33 @@ package services
 
 import (
 	"context"
-	"fmt"
 	"log"
-	"gin/internal/config"
 
-	"github.com/clerkinc/clerk-sdk-go/clerk"
+	"github.com/MunishMummadi/devmatch/server/internal/config"
+	clerk "github.com/clerk/clerk-sdk-go/v2"
+	"github.com/clerk/clerk-sdk-go/v2/user"
 )
 
 // ClerkService handles specific interactions with the Clerk API beyond basic auth middleware.
 type ClerkService struct {
-	client clerk.Client
-	cfg    *config.Config
+	cfg *config.Config
 }
 
 // NewClerkService creates a new instance of ClerkService.
-func NewClerkService(client clerk.Client, cfg *config.Config) *ClerkService {
-	if client == nil {
-		log.Println("Warning: Clerk client provided to NewClerkService is nil. Service may not function correctly.")
-		// Depending on use case, might return nil or an error, or allow a nil client
-	}
+func NewClerkService(cfg *config.Config) *ClerkService {
 	return &ClerkService{
-		client: client,
-		cfg:    cfg,
+		cfg: cfg,
 	}
 }
 
-// GetClerkUserMetadata fetches user metadata from Clerk using the user ID.
-// Note: Often, user claims are already available in the request context via middleware.
-// This function demonstrates a direct API call if needed.
-func (s *ClerkService) GetClerkUserMetadata(ctx context.Context, userID string) (*clerk.User, error) {
-	if s.client == nil {
-		return nil, fmt.Errorf("Clerk client is not initialized")
-	}
-
-	user, err := s.client.Users().Read(userID)
+// GetUser fetches user details from Clerk using the user ID.
+func (s *ClerkService) GetUser(ctx context.Context, userID string) (*clerk.User, error) {
+	clerkUser, err := user.Get(ctx, userID)
 	if err != nil {
-		log.Printf("Error fetching Clerk user data for %s: %v", userID, err)
-		// Handle specific Clerk errors if necessary, e.g., user not found
-		return nil, fmt.Errorf("failed to fetch user data from Clerk: %w", err)
+		log.Printf("Error fetching user from Clerk API for userID %s: %v", userID, err)
+		return nil, err
 	}
-
-	log.Printf("Successfully fetched Clerk user data for %s", userID)
-	return user, nil
+	return clerkUser, nil
 }
 
 // Add other Clerk API interaction functions as needed.
