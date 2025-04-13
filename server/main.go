@@ -9,9 +9,10 @@ import (
 	"syscall"
 	"time"
 
-	"server/api/routes"                 // <-- Adjust import path
-	"server/internal/config"            // <-- Adjust import path
-	"server/internal/services/database" // <-- Adjust import path
+	"gin/api/routes"                 // Corrected import path
+	"gin/internal/config"            // Corrected import path
+	"gin/internal/services"          // Added services import
+	"gin/internal/services/database" // Corrected import path
 
 	"github.com/clerkinc/clerk-sdk-go/clerk"
 )
@@ -61,8 +62,27 @@ func main() {
 	}()
 	log.Println("Database connection pool initialized successfully.")
 
+	// Initialize Services
+	githubService := services.NewGitHubService(cfg)
+	geminiService, err := services.NewGeminiService(cfg)
+	if err != nil {
+		// Decide how to handle Gemini init failure - fatal or just log?
+		// For now, log and continue, but the service will be nil/unusable.
+		// log.Fatalf("Failed to initialize Gemini service: %v", err) // Option: Fatal
+		log.Printf("Warning: Failed to initialize Gemini service: %v. Gemini features will be disabled.", err)
+		// Ensure geminiService is nil if error occurred (already is due to return nil)
+	} else {
+		// Ensure Gemini client is closed on shutdown
+		defer func() {
+			log.Println("Closing Gemini client...")
+			geminiService.Close()
+		}()
+	}
+	clerkService := services.NewClerkService(clerkClient, cfg)
+	log.Println("Application services initialized.")
+
 	// Setup Gin Router
-	router := routes.SetupRouter(dbPool, clerkClient)
+	router := routes.SetupRouter(dbPool, clerkClient, githubService, geminiService, clerkService)
 	log.Println("Gin router setup complete.")
 
 	// Setup HTTP Server

@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/MunishMummadi/devmatch/server/internal/models" // <-- Adjust import path
+	"gin/internal/models" // Corrected import path
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
