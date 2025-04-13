@@ -4,8 +4,8 @@ import (
 	"log"
 	"net/http"
 
-	"server/api/middleware"             // <-- Adjust import path
-	"server/internal/services/database" // <-- Adjust import path
+	"gin/api/middleware"
+	"gin/internal/services/database"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"

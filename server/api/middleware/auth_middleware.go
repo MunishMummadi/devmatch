@@ -3,7 +3,6 @@ package middleware
 import (
 	"log"
 	"net/http"
-	"strings"
 
 	"github.com/clerkinc/clerk-sdk-go/clerk"
 	"github.com/gin-gonic/gin"
@@ -15,48 +14,68 @@ const (
 	ClerkUserIDContextKey  = "clerk_user_id"
 )
 
+// ContextKey defines a type for context keys to avoid collisions.
+type ContextKey string
+
+// UserIDKey is the key used to store the Clerk User ID in the Gin context.
+const UserIDKey ContextKey = "clerkUserID"
+
 // ClerkMiddleware creates Gin middleware for Clerk authentication.
 func ClerkMiddleware(clerkClient clerk.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		session, err := clerkClient.AuthenticateRequest(c.Request)
+		// Extract the session token from the Authorization header
+		sessionToken := c.GetHeader("Authorization")
+		if sessionToken == "" {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Authorization header missing"})
+			return
+		}
+
+		// The token is usually prefixed with "Bearer ", remove it
+		if len(sessionToken) > 7 && sessionToken[:7] == "Bearer " {
+			sessionToken = sessionToken[7:]
+		} else {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid Authorization header format"})
+			return
+		}
+
+		// Verify the session token
+		sessionClaims, err := clerkClient.VerifyToken(sessionToken)
 		if err != nil {
-			// Log different types of errors
-			log.Printf("Clerk authentication error: %v\n", err)
-
-			// Handle specific Clerk error types if needed, otherwise generic unauthorized
-			// Examples: errors.Is(err, clerk.ErrNoSessionToken), errors.Is(err, clerk.ErrInvalidSessionToken) etc.
-			if strings.Contains(err.Error(), "no session token") || strings.Contains(err.Error(), "invalid session token") {
-				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized: Invalid or missing session token"})
-			} else if strings.Contains(err.Error(), "expired") {
-				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized: Session token expired"})
-			} else {
-				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Authentication error"}) // Or 401 depending on policy
-			}
+			log.Printf("Error verifying Clerk session token: %v", err)
+			// Differentiate between invalid token and other errors if needed
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid session token"})
 			return
 		}
 
-		if session == nil || session.Claims == nil {
-			log.Println("Clerk authentication failed: No active session or claims found")
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized: No active session"})
-			return
-		}
+		// Check if session is active (optional but recommended)
+		// if sessionClaims.Expiry.Before(time.Now()) { // This check might be handled by VerifyToken already
+		// 	c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Session expired"})
+		// 	return
+		// }
 
-		// Session is valid, enrich context
-		c.Set(ClerkSessionContextKey, session)
-		c.Set(ClerkUserIDContextKey, session.Claims.Subject) // Subject usually holds the User ID
+		// Set the user ID in the context for downstream handlers
+		c.Set(string(UserIDKey), sessionClaims.Subject) // Subject usually holds the User ID
+		log.Printf("Clerk Auth successful for user: %s", sessionClaims.Subject)
 
-		// Continue down the chain
+		// Continue to the next handler
 		c.Next()
 	}
 }
 
 // GetClerkUserID retrieves the Clerk User ID from the Gin context.
-// Should be called *after* ClerkMiddleware has run successfully.
+// It returns the UserID and true if found, otherwise an empty string and false.
 func GetClerkUserID(c *gin.Context) (string, bool) {
-	userID, exists := c.Get(ClerkUserIDContextKey)
+	userID, exists := c.Get(string(UserIDKey))
 	if !exists {
+		log.Println("Warning: Clerk User ID not found in context")
 		return "", false
 	}
-	idStr, ok := userID.(string)
-	return idStr, ok
+
+	userIDStr, ok := userID.(string)
+	if !ok {
+		log.Println("Warning: Clerk User ID in context is not a string")
+		return "", false
+	}
+
+	return userIDStr, true
 }
