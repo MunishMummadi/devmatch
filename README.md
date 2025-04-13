@@ -86,4 +86,4 @@ The system automatically:
 - Stores GitHub metadata including public repos and follower data
 
 ## License
-[MIT](LICENSE)
+- [MIT](LICENSE)
