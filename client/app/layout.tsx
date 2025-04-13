@@ -12,7 +12,7 @@ const poppins = Poppins({
 export const metadata: Metadata = {
   title: "DEVMatch",
   description: "Connect with developers around the world",
-    generator: 'v0.dev'
+  generator: "v0.dev",
 }
 
 export default function RootLayout({
@@ -24,14 +24,14 @@ export default function RootLayout({
     <html lang="en">
       <body className={poppins.className}>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
-          <div className="min-h-screen bg-gradient-to-br from-purple-50 to-purple-100">
-            <div className="animated-background">{children}</div>
-          </div>
+          <div className="min-h-screen">{children}</div>
         </ThemeProvider>
       </body>
     </html>
   )
 }
+
+import "./globals.css"
 
 
 import './globals.css'

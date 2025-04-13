@@ -9,7 +9,7 @@
   --card-foreground: 222.2 84% 4.9%;
   --popover: 0 0% 100%;
   --popover-foreground: 222.2 84% 4.9%;
-  --primary: 262.1 83.3% 57.8%;
+  --primary: 325 90% 60%;
   --primary-foreground: 210 40% 98%;
   --secondary: 210 40% 96.1%;
   --secondary-foreground: 222.2 47.4% 11.2%;
@@ -21,7 +21,7 @@
   --destructive-foreground: 210 40% 98%;
   --border: 214.3 31.8% 91.4%;
   --input: 214.3 31.8% 91.4%;
-  --ring: 262.1 83.3% 57.8%;
+  --ring: 325 90% 60%;
   --radius: 0.75rem;
 }
 
@@ -32,7 +32,7 @@
   --card-foreground: 210 40% 98%;
   --popover: 222.2 84% 4.9%;
   --popover-foreground: 210 40% 98%;
-  --primary: 262.1 73.3% 57.8%;
+  --primary: 325 90% 60%;
   --primary-foreground: 210 40% 98%;
   --secondary: 217.2 32.6% 17.5%;
   --secondary-foreground: 210 40% 98%;
@@ -44,7 +44,7 @@
   --destructive-foreground: 210 40% 98%;
   --border: 217.2 32.6% 17.5%;
   --input: 217.2 32.6% 17.5%;
-  --ring: 262.1 73.3% 57.8%;
+  --ring: 325 90% 60%;
 }
 
 @layer base {
@@ -56,23 +56,37 @@
   }
 }
 
-.animated-background {
-  position: relative;
-  min-height: 100vh;
-  width: 100%;
-  overflow: hidden;
+.swipe-instruction {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(255, 255, 255, 0.8);
+  padding: 10px 20px;
+  border-radius: 20px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  z-index: 50;
+  backdrop-filter: blur(8px);
+  font-size: 14px;
+  color: #666;
+  text-align: center;
+  transition: opacity 0.3s ease;
 }
 
-@keyframes pulse-slow {
+.swipe-instruction.hidden {
+  opacity: 0;
+}
+
+@keyframes float {
   0%,
   100% {
-    opacity: 0.1;
+    transform: translateY(0);
   }
   50% {
-    opacity: 0.2;
+    transform: translateY(-10px);
   }
 }
 
-.pulse-animation {
-  animation: pulse-slow 8s ease-in-out infinite;
+.floating {
+  animation: float 6s ease-in-out infinite;
 }
