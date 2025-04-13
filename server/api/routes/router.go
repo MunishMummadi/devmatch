@@ -16,11 +16,7 @@ import (
 
 func SetupRouter(dbPool *sql.DB, clerkClient clerk.Client, githubService *services.GitHubService, geminiService *services.GeminiService, clerkService *services.ClerkService) *gin.Engine {
 	// Set Gin mode (debug, release, test)
-	ginMode := gin.DebugMode // Default or get from config
-	if mode := gin.Mode(); mode != "" {
-		ginMode = mode
-	}
-	gin.SetMode(ginMode)
+	gin.SetMode("debug")
 
 	router := gin.Default() // Includes logger and recovery middleware
 
