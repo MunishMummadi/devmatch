@@ -1,35 +1,6 @@
-// app/messages/page.js
-
 export default function MessagesPage() {
     return (
         <div style={styles.container}>
-            {/* LEFT SIDEBAR with icons */}
-            <aside style={styles.sidebar}>
-                <div style={styles.profileArea}>
-                    {/* Placeholder user avatar */}
-                    <img
-                        src="https://via.placeholder.com/40"
-                        alt="User Avatar"
-                        style={styles.avatar}
-                    />
-                </div>
-                <div style={styles.navIcons}>
-                    <div style={styles.navIcon}>
-                        <span>🏠</span>
-                    </div>
-                    <div style={styles.navIcon}>
-                        <span>✉️</span>
-                    </div>
-                    <div style={styles.navIcon}>
-                        <span>📂</span>
-                    </div>
-                    <div style={styles.navIcon}>
-                        <span>🗑️</span>
-                    </div>
-                </div>
-                <button style={styles.fabButton}>+</button>
-            </aside>
-
             {/* CONVERSATION LIST */}
             <div style={styles.conversationList}>
                 <div style={styles.searchBar}>
@@ -39,10 +10,11 @@ export default function MessagesPage() {
                         style={styles.searchInput}
                     />
                 </div>
-                {/* Hard-coded conversation items */}
+
+                {/* Static conversation items */}
                 <div style={styles.conversationItem}>
                     <img
-                        src="https://via.placeholder.com/40"
+                        src="https://png.pngtree.com/png-vector/20190710/ourmid/pngtree-user-vector-avatar-png-image_1541962.jpg"
                         alt="Jessica Carroll"
                         style={styles.listAvatar}
                     />
@@ -62,7 +34,7 @@ export default function MessagesPage() {
 
                 <div style={styles.conversationItem}>
                     <img
-                        src="https://via.placeholder.com/40"
+                        src="https://png.pngtree.com/png-vector/20190710/ourmid/pngtree-user-vector-avatar-png-image_1541962.jpg"
                         alt="Emily Rose"
                         style={styles.listAvatar}
                     />
@@ -82,7 +54,7 @@ export default function MessagesPage() {
 
                 <div style={styles.conversationItem}>
                     <img
-                        src="https://via.placeholder.com/40"
+                        src="https://png.pngtree.com/png-vector/20190710/ourmid/pngtree-user-vector-avatar-png-image_1541962.jpg"
                         alt="David Bryant"
                         style={styles.listAvatar}
                     />
@@ -101,7 +73,7 @@ export default function MessagesPage() {
                 </div>
             </div>
 
-            {/* CHAT WINDOW */}
+            {/* MAIN CHAT WINDOW */}
             <main style={styles.chatArea}>
                 <header style={styles.chatHeader}>
                     <div>
@@ -110,15 +82,16 @@ export default function MessagesPage() {
                     </div>
                     <div style={styles.chatActions}>
                         <span>📞</span>
-                        <span>📱</span>
+                        {/* <span>📱</span> */}
                         <span>⋮</span>
                     </div>
                 </header>
 
                 <div style={styles.chatMessages}>
+                    {/* Example message from contact */}
                     <div style={styles.messageItem}>
                         <img
-                            src="https://via.placeholder.com/40"
+                            src="https://png.pngtree.com/png-vector/20190710/ourmid/pngtree-user-vector-avatar-png-image_1541962.jpg"
                             alt="Jessica Carroll"
                             style={styles.listAvatar}
                         />
@@ -128,6 +101,7 @@ export default function MessagesPage() {
                         </div>
                     </div>
 
+                    {/* Example message from user */}
                     <div style={{ ...styles.messageItem, ...styles.messageItemMine }}>
                         <div style={styles.bubbleMine}>
                             <p>Hello Jessica, how can I help you?</p>
@@ -135,9 +109,10 @@ export default function MessagesPage() {
                         </div>
                     </div>
 
+                    {/* Another example message from contact */}
                     <div style={styles.messageItem}>
                         <img
-                            src="https://via.placeholder.com/40"
+                            src="https://png.pngtree.com/png-vector/20190710/ourmid/pngtree-user-vector-avatar-png-image_1541962.jpg"
                             alt="Jessica Carroll"
                             style={styles.listAvatar}
                         />
@@ -169,54 +144,14 @@ export default function MessagesPage() {
 }
 
 const styles = {
+    /* Container -> 2 columns: conversation list + chat area */
     container: {
         display: 'flex',
         height: '100vh',
         backgroundColor: '#f5f7fa',
     },
-    // LEFT SIDEBAR
-    sidebar: {
-        width: '60px',
-        backgroundColor: '#2196f3',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        padding: '1rem 0',
-        gap: '1rem',
-    },
-    profileArea: {
-        marginBottom: '1rem',
-    },
-    avatar: {
-        width: '40px',
-        height: '40px',
-        borderRadius: '50%',
-        objectFit: 'cover',
-    },
-    navIcons: {
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '1rem',
-        flex: 1,
-    },
-    navIcon: {
-        cursor: 'pointer',
-        color: '#fff',
-        textAlign: 'center',
-        fontSize: '1.2rem',
-    },
-    fabButton: {
-        backgroundColor: '#ff9800',
-        border: 'none',
-        borderRadius: '50%',
-        width: '40px',
-        height: '40px',
-        fontSize: '1.2rem',
-        color: '#fff',
-        cursor: 'pointer',
-    },
 
-    // CONVERSATION LIST
+    /* LEFT COLUMN: CONVERSATION LIST */
     conversationList: {
         width: '300px',
         backgroundColor: '#fff',
@@ -273,7 +208,7 @@ const styles = {
         marginTop: 0,
     },
 
-    // CHAT AREA
+    /* RIGHT COLUMN: CHAT AREA */
     chatArea: {
         flex: 1,
         display: 'flex',
