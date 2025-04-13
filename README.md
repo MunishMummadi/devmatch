@@ -79,6 +79,11 @@ npm start
 | POST | `/api/conversations` | Start new conversation |
 | GET | `/api/conversations/{id}/messages` | Get message history |
 
+## Collaborators 
+- [Naga Pavan Muni](https://github.com/nagapavanmuni) -> Fronend Developer
+- [Munish Mummadi](https://github.com/MunishMummadi) -> Backend Developer
+- [Sowmya Koneti](https://github.com/SowmyaKoneti) -> Fullstack Developer
+
 ## GitHub Integration
 The system automatically:
 - Syncs user profiles every 24 hours
