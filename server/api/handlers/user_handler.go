@@ -4,9 +4,9 @@ import (
 	"log"
 	"net/http"
 
-	"server/api/middleware"             // <-- Adjust import path
-	"server/internal/models"            // <-- Adjust import path
-	"server/internal/services/database" // <-- Adjust import path
+	"gin/api/middleware"             // Corrected import path
+	"gin/internal/models"            // Corrected import path
+	"gin/internal/services/database" // Corrected import path
 
 	"github.com/gin-gonic/gin"
 )

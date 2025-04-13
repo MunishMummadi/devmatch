@@ -2,54 +2,50 @@ package database
 
 import (
 	"context"
+	"database/sql"
+	"errors"
+	"fmt"
 	"log"
 	"time"
 
-	"github.com/MunishMummadi/devmatch/server/internal/models" // <-- Adjust import path
-
-	"github.com/jackc/pgx/v5/pgxpool"
+	_ "github.com/mattn/go-sqlite3"
+	"gin/internal/models"
 )
 
 // DBService encapsulates database operations.
 type DBService struct {
-	Pool *pgxpool.Pool
+	DB *sql.DB
 }
 
 // NewDBService creates a new DBService.
-func NewDBService(pool *pgxpool.Pool) *DBService {
-	return &DBService{Pool: pool}
+func NewDBService(db *sql.DB) *DBService {
+	return &DBService{DB: db}
 }
 
-// ConnectDB establishes a connection pool to the database.
-func ConnectDB(databaseURL string) (*pgxpool.Pool, error) {
-	config, err := pgxpool.ParseConfig(databaseURL)
+// ConnectDB establishes a connection to the SQLite database.
+func ConnectDB(databasePath string) (*sql.DB, error) {
+	db, err := sql.Open("sqlite3", databasePath)
 	if err != nil {
-		log.Printf("Error parsing database URL: %v\n", err)
+		log.Printf("Error opening database: %v\n", err)
 		return nil, err
 	}
 
-	// Optional: Configure pool settings
-	config.MaxConns = 10 // Example: Set max connections
-	config.MinConns = 2  // Example: Set min connections
-	config.MaxConnLifetime = time.Hour
-	config.MaxConnIdleTime = 30 * time.Minute
+	// Configure connection pool (optional but recommended)
+	// db.SetMaxOpenConns(10) // Example: Set max open connections
+	// db.SetMaxIdleConns(5)  // Example: Set max idle connections
+	// db.SetConnMaxLifetime(time.Hour) // Example: Set connection max lifetime
 
-	pool, err := pgxpool.NewWithConfig(context.Background(), config)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	err = db.PingContext(ctx)
 	if err != nil {
-		log.Printf("Error connecting to database: %v\n", err)
-		return nil, err
-	}
-
-	// Test the connection
-	err = pool.Ping(context.Background())
-	if err != nil {
-		pool.Close() // Close pool if ping fails
+		db.Close()
 		log.Printf("Error pinging database: %v\n", err)
 		return nil, err
 	}
 
-	log.Println("Database connection pool established successfully.")
-	return pool, nil
+	log.Printf("Database connection established successfully to %s.\n", databasePath)
+	return db, nil
 }
 
 // --- User Profile Operations ---
@@ -59,10 +55,10 @@ func (s *DBService) GetUserProfileByClerkID(ctx context.Context, clerkUserID str
 	query := `
 		SELECT id, clerk_user_id, username, picture_url, bio, github_url, created_at, updated_at
 		FROM users
-		WHERE clerk_user_id = $1`
+		WHERE clerk_user_id = ?`
 
 	var user models.User
-	err := s.Pool.QueryRow(ctx, query, clerkUserID).Scan(
+	err := s.DB.QueryRowContext(ctx, query, clerkUserID).Scan(
 		&user.ID,
 		&user.ClerkUserID,
 		&user.Username,
@@ -73,34 +69,35 @@ func (s *DBService) GetUserProfileByClerkID(ctx context.Context, clerkUserID str
 		&user.UpdatedAt,
 	)
 	if err != nil {
-		// Use pgx.ErrNoRows to check if user not found specifically
-		// Log other errors
+		if errors.Is(err, sql.ErrNoRows) {
+			log.Printf("No user found with Clerk ID: %s", clerkUserID)
+			return nil, err
+		}
+		log.Printf("Error querying user by Clerk ID: %v", err)
 		return nil, err
 	}
 	return &user, nil
 }
 
 // CreateOrUpdateUserProfile creates a new user or updates an existing one based on Clerk User ID.
-// Assumes the input user model contains the ClerkUserID.
 func (s *DBService) CreateOrUpdateUserProfile(ctx context.Context, user models.User) (*models.User, error) {
-	// Ensure ClerkUserID is provided
 	if user.ClerkUserID == "" {
-		return nil, log.Output(1, "ClerkUserID is required to create or update profile") // Simplified error handling
+		return nil, fmt.Errorf("ClerkUserID is required to create or update profile")
 	}
 
 	query := `
 		INSERT INTO users (clerk_user_id, username, picture_url, bio, github_url)
-		VALUES ($1, $2, $3, $4, $5)
+		VALUES (?, ?, ?, ?, ?)
 		ON CONFLICT (clerk_user_id) DO UPDATE SET
-			username = EXCLUDED.username,
-			picture_url = EXCLUDED.picture_url,
-			bio = EXCLUDED.bio,
-			github_url = EXCLUDED.github_url,
-			updated_at = NOW() -- Use NOW() or rely on trigger
+			username = excluded.username,
+			picture_url = excluded.picture_url,
+			bio = excluded.bio,
+			github_url = excluded.github_url,
+			updated_at = CURRENT_TIMESTAMP
 		RETURNING id, clerk_user_id, username, picture_url, bio, github_url, created_at, updated_at`
 
 	var createdOrUpdatedUser models.User
-	err := s.Pool.QueryRow(ctx, query,
+	err := s.DB.QueryRowContext(ctx, query,
 		user.ClerkUserID,
 		user.Username,
 		user.PictureURL,
@@ -118,7 +115,7 @@ func (s *DBService) CreateOrUpdateUserProfile(ctx context.Context, user models.U
 	)
 
 	if err != nil {
-		log.Printf("Error in CreateOrUpdateUserProfile: %v\n", err) // Log the error
+		log.Printf("Error in CreateOrUpdateUserProfile: %v\n", err)
 		return nil, err
 	}
 
