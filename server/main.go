@@ -52,9 +52,9 @@ func main() {
 	log.Println("Clerk client initialized successfully.")
 
 	// Initialize Database Connection Pool
-	dbPool, err := database.ConnectDB(cfg.SupabaseDBURL)
+	dbPool, err := database.ConnectDB(cfg.SQLitePath)
 	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+		log.Fatalf("Failed to initialize database connection: %v", err)
 	}
 	defer func() {
 		log.Println("Closing database connection pool...")
