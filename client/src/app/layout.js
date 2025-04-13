@@ -1,6 +1,8 @@
 // app/layout.js
 import './globals.css';
 import React from 'react';
+import Link from 'next/link';
+
 
 // If you need a special font from Google, you can import it:
 // import { Inter } from 'next/font/google';
@@ -18,9 +20,9 @@ export default function RootLayout({ children }) {
         {/* NAVIGATION / HEADER */}
         <header style={styles.header}>
           <nav style={styles.nav}>
-            <div style={styles.logo}>impact</div>
+            <div style={styles.logo}><Link href="/">DevMatch</Link></div>
             <ul style={styles.navLinks}>
-              <li>Messages</li>
+              <li><Link href="/messages">Messages</Link></li>
               {/* <li>Front pages</li>
               <li>App pages</li>
               <li>Support</li> */}

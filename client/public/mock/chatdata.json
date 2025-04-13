@@ -1,0 +1,52 @@
+{
+    "conversations": [
+        {
+            "id": "conv1",
+            "userId": "user123",
+            "contactName": "Jessica Carroll",
+            "lastMessage": "Currently we are looking for a UI designer...",
+            "title": "Work Inquiry - UI Designer",
+            "timestamp": "1h ago",
+            "avatar": "https://via.placeholder.com/40"
+        },
+        {
+            "id": "conv2",
+            "userId": "user123",
+            "contactName": "Emily Rose",
+            "lastMessage": "Sed rhoncus aliquam velit sit amet...",
+            "title": "Invitation: Board Game Night",
+            "timestamp": "2h ago",
+            "avatar": "https://via.placeholder.com/40"
+        }
+    ],
+    "messages": {
+        "conv1": [
+            {
+                "from": "Jessica Carroll",
+                "text": "Hey Michael!",
+                "timestamp": "10:17 am",
+                "type": "incoming"
+            },
+            {
+                "from": "You",
+                "text": "Hello Jessica, how can I help you?",
+                "timestamp": "10:29 am",
+                "type": "outgoing"
+            },
+            {
+                "from": "Jessica Carroll",
+                "text": "Currently we are looking for a UI designer to work on our websites and mobile application.",
+                "timestamp": "10:35 am",
+                "type": "incoming"
+            }
+        ],
+        "conv2": [
+            {
+                "from": "Emily Rose",
+                "text": "Don’t forget board game night at 8!",
+                "timestamp": "4:17 pm",
+                "type": "incoming"
+            }
+        ]
+    }
+}
