@@ -1,0 +1,16 @@
+[
+    {
+        "id": 1,
+        "name": "Alice",
+        "logo": "/next.svg",
+        "deployLink": "https://vercel.com/deploy/alice",
+        "docsLink": "https://nextjs.org/docs/alice"
+    },
+    {
+        "id": 2,
+        "name": "Bob",
+        "logo": "/next.svg",
+        "deployLink": "https://vercel.com/deploy/bob",
+        "docsLink": "https://nextjs.org/docs/bob"
+    }
+]
