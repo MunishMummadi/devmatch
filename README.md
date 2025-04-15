@@ -80,7 +80,7 @@ npm start
 | GET | `/api/conversations/{id}/messages` | Get message history |
 
 ## Collaborators 
-- [Naga Pavan Muni](https://github.com/nagapavanmuni) -> Fronend Developer
+- [Naga Pavan Muni](https://github.com/nagapavanmuni) -> Frontend Developer
 - [Munish Mummadi](https://github.com/MunishMummadi) -> Backend Developer
 - [Sowmya Koneti](https://github.com/SowmyaKoneti) -> Fullstack Developer
 
